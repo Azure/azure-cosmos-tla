@@ -2,7 +2,7 @@
 
 We describe the consistency guarantees provided to the clients by [Azure Cosmos DB](http://cosmosdb.com). Customers of Cosmos DB can associate any number of Azure regions (50+ at the time of writing) to their Cosmos datbase, at any time. The clients can read and write locally from any of the regions associated with the given Cosmos database.
 
-Cosmos DB allows developers to choose between [five well-defined consistency models](https://docs.microsoft.com/en-us/azure/cosmos-db/consistency-levels) along the consistency spectrum – strong, bounded staleness, session, consistent prefix and eventual. Cosmos DB has operationalized and exposed them to developers with clear semantics, performance/availability tradeoffs and backed by comprehensive [Service Level Agreements (SLAs)](https://azure.microsoft.com/en-us/support/legal/sla/cosmos-db/). Informally, the five consistency models are described as below.
+Cosmos DB allows developers to choose between [five well-defined consistency models](https://docs.microsoft.com/en-us/azure/cosmos-db/consistency-levels) along the consistency spectrum – *strong*, *bounded staleness*, *session*, *consistent prefix* and *eventual*. Cosmos DB has operationalized and exposed them to developers with clear semantics, performance/availability tradeoffs and backed by comprehensive [Service Level Agreements (SLAs)](https://azure.microsoft.com/en-us/support/legal/sla/cosmos-db/). Informally, the five consistency models are described as below.
 
 
 <style type="text/css">
@@ -19,7 +19,7 @@ Cosmos DB allows developers to choose between [five well-defined consistency mod
   </tr>
   <tr>
     <td class="tg-0pky">Strong</td>
-    <td class="tg-0pky">Linearizable reads.</td>
+    <td class="tg-0pky">Linearizable reads</td>
   </tr>
   <tr>
     <td class="tg-0pky">Bounded Staleness</td>
@@ -30,12 +30,12 @@ Cosmos DB allows developers to choose between [five well-defined consistency mod
     <td class="tg-0pky">Consistent Prefix. Monotonic reads, monotonic writes, read-your-writes, write-follows-reads</td>
   </tr>
   <tr>
-    <td class="tg-0lax">Consistent Prefix</td>
-    <td class="tg-0lax">Updates returned are some prefix of all the updates, with no gaps</td>
+    <td class="tg-0pky">Consistent Prefix</td>
+    <td class="tg-0pky">Updates returned are some prefix of all the updates, with no gaps</td>
   </tr>
   <tr>
-    <td class="tg-0lax">Eventual</td>
-    <td class="tg-0lax">Eventual</td>
+    <td class="tg-0pky">Eventual</td>
+    <td class="tg-0pky">Eventual</td>
   </tr>
 </table>
 
@@ -47,11 +47,12 @@ To simplify the exposition of the consistency guarantees given to the clients, w
 
 In the final example (the general model), we present our TLA+/PlusCal specification of the general model of Cosmos DB, where multiple clients across different regions put Cosmos DB to the test with respect to the consistency guarantees it provides in the presence of concurrent read and writes.
 
-* [Scenario 1: TLA+ for a client writing incremented counter values](./TLA+ for Scenario 1)
+* [Scenario 1: TLA+ for a client writing incremented counter values](scenario1/README.md)
 
-* [Scenario 2: TLA+ for a client Reading, incrementing, writing-back counter values](./TLA+ for Scenario 2) 
+* [Scenario 2: TLA+ for a client Reading, incrementing, writing-back counter values](scenario2/README.md) 
 
-* [The general model: TLA+ for the general model with multiple clients operating on a globally distributed Cosmos database.](./TLA+ for the general model))
+* [The general model: TLA+ for the general model with multiple clients operating on a globally distributed Cosmos database](general-model/README.md)
+
 
 
 

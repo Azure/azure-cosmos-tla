@@ -1,4 +1,4 @@
-# TLA+ for a client writing incremented counter values
+# TLA+ for the client writing incremented counter values
 
 In this simple scenario, the client writes to the database the value of its local counter (incremented after each write operation), and reads from the database with one of the 5 consistency levels provided, demonstrating how the consistency levels compare and contrast with each other. The client code is simple.
 

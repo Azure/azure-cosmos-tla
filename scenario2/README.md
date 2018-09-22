@@ -1,4 +1,4 @@
-# TLA+ for a client reading, incrementing, writing-back counter values
+# TLA+ for the client reading, incrementing, writing-back counter values
  
 This is another simple scenario similar to Scenario 1. Here the client reads the counter value from the database (with one of the five consistency levels configured), increments it, and writes it back. Through this example, we show that only with the session and strong consistency reads (which return the most recent value of the counter), the counter values stored in the database become consecutive. 
 
