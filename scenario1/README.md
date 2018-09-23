@@ -46,9 +46,7 @@ When we check for bounded-staleness, we find that all the invariants, except for
 
 ![](5.png)
 
-When we check for consistent prefix, we find that strong and bounded-staleness predicates are violated, because consistent prefix reads fail to meet freshness requirements in those predicates. The screenshot from the model checker shows a trace where the most recent value in the `Database` is 1, whereas that in the `chistory` is 0. Consistency="Eventual" returns the same results as consistent prefix.
-
-A note about performance is in order. Our TLA modeling focuses on the correctness guarantees provided to the client and does not model the cost of the consistency levels. While the reads are always answered within the nearest region, the weaker consistency read levels incur the least cost both in terms of latency and monetory cost. The session, eventual and consistent prefix reads are served from one replica without getting blocked/delayed for replication from other regions. The reads are answered by a read quorum of 2 out of 4 replicas for bounded staleness and strong consistency, and incur higher latency and monetary cost for the user. Cosmos DB guarantees single-digit-millisecond read latencies at the 99th percentile for all consistency levels and single digit millisecond write latencies at the 99th percentile, for all consistency levels except the "Strong". As a globally distributed database, Cosmos DB provides financially backed, comprehensive [SLAs](https://azure.microsoft.com/en-us/support/legal/sla/cosmos-db/) encompassing, the read and write latencies at the 99th percentile, throughput, consistency and availability.
+When we check for consistent prefix, we find that strong and bounded-staleness predicates are violated, because consistent prefix reads fail to meet freshness requirements in those predicates. The screenshot from the model checker shows a trace where the most recent value in the _Database_ is 1, whereas that in the _chistory_ is 0. Consistency="Eventual" returns the same results as consistent prefix.
 
 ## Sources
 
