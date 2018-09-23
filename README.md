@@ -14,7 +14,9 @@ Cosmos DB allows developers to choose between [five well-defined consistency mod
 | Consistent Prefix | Updates returned are some prefix of all the updates, with no gaps                           |
 | Eventual          | Eventual                                                                                    |
 
-Describing the consistency levels in English is prone to errors due to the ambiguity of natural language and generalizations involved. In this document, we use [TLA+ specification language](http://lamport.azurewebsites.net/tla/tla.html) to specify the consistency guarantees precisely. TLA+ is a tool for specifying distributed algorithms/protocols mathematically and model checking them for correctness. The Cosmos DB engineering team heavily relies on TLA+ for specifying distributed algorithms and protocols mathematically and model checking them for correctness to verify the design decisions and address the corner cases induced by concurrency and faults.
+Describing the consistency levels in English is prone to errors due to the ambiguity of natural language and generalizations involved. In this document, we use [TLA+ specification language](http://lamport.azurewebsites.net/tla/tla.html) to specify the consistency guarantees precisely. TLA+ is a tool for specifying distributed algorithms/protocols mathematically and model checking them for correctness. The Cosmos DB engineering team heavily relies on TLA+ for specifying distributed algorithms and protocols mathematically and model checking them for correctness to verify the design decisions and address the corner cases induced by concurrency and faults. [Here]((https://aka.ms/LeslieMM)) is a recent video interview of Dr. Leslie Lamport describing the application of TLA+ in Cosmos DB. 
+
+[![](Lamport.png)](https://aka.ms/LeslieMM)
 
 Although Cosmos DB is a globally distributed database, it provides the user with a single logical system image of all of their globally distributed data. The specifications we provide in this document focus on the clients' interactions with their globally distributed Cosmos DB database as a single logical entity by performing writes and reads, based on the consistency level specified. We refrain from modeling the Cosmos DB internals, and model a user's Cosmos DB database as a single system image, abstracting away the underlying global distribution/replication among the regions.
 
@@ -28,7 +30,7 @@ To simplify the exposition of the consistency guarantees given to the clients, w
 
 ## Questions
 
-If you have any questions, please reach out to AskCosmosDB@microsoft.com.
+If you have any questions, please reach out to dharmas@microsoft.com.
 
 ## License
 
