@@ -2,7 +2,7 @@
 
 This is another scenario, similar to scenario 1. Here the client reads the counter value from the database (with one of the five consistency levels configured), increments it, and writes it back. Through this example, we show that only with the session and strong consistency reads (which return the most recent value of the counter), the counter values stored in the database become consecutive.
 
-The database model is unchanged compared to Sceanrio 1. Only the client model is slightly modified as below.
+The database model is unchanged compared to Scenario 1. Only the client model is slightly modified as below.
 
 ![](1.png)
 
