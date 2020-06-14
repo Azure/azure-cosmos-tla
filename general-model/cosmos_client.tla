@@ -129,8 +129,8 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     (* Reads with consistency checks *)
     macro read()
     {
-        (* I check session token for consistent_prefix *)
-        when Consistency /= "consistent_prefix" \/ \A i \in WriteRegions : Data[self[1]] = prefix_token + 1; 
+        (* I check prefix token for consistent_prefix *)
+        when Consistency /= "consistent_prefix" \/ Data[self[1]] = prefix_token + 1; 
         (* We check session token for session consistency *)
         when Consistency /= "session" \/ Data[self[1]] >= session_token;
         (* We check global value for strong consistency *)
@@ -324,6 +324,8 @@ AnyReadPerRegion(r) == \A i \in DOMAIN History : /\ History[i].type = "read"
 (* Operation in history h is monitonic *)
 Monotonic(h) == \A i, j \in DOMAIN h : i <= j => h[i].data <= h[j].data
 
+StrongMonotonicOneByOne(h) == \A i, j \in DOMAIN h : i < j => h[i].data + 1 = h[j].data
+
 (* Reads in region r are monotonic *)
 MonotonicReadPerRegion(r) == LET reads == [i \in {j \in DOMAIN History : /\ History[j].type = "read" 
                                                                          /\ History[j].region = r}
@@ -335,7 +337,12 @@ MonotonicReadPerClient(c) == LET reads == [i \in {j \in DOMAIN History : /\ Hist
                                                                          /\ History[j].client = c} 
                                           |-> History[i]]
                               IN Monotonic(reads)
-                             
+
+OneByOneReadPerClient(c) == LET reads == [i \in {j \in DOMAIN History : /\ History[j].type = "read" 
+                                                                        /\ History[j].client = c}
+                                                  |-> History[i]]
+                                     IN StrongMonotonicOneByOne(reads)
+
 MonotonicWritePerRegion(r) == LET writes == [i \in {j \in DOMAIN History : /\ History[j].type = "write" 
                                                                            /\ History[j].region = r} 
                                             |-> History[i]]
@@ -365,8 +372,9 @@ BoundedStaleness == /\ \A i, j \in Regions : Data[i] - Data[j] <= K
                     /\ \A r \in Regions : MonotonicReadPerRegion(r)
                     /\ ReadYourWrite
 
-ConsistentPrefix == \A r \in Regions : /\ MonotonicWritePerRegion(r)
-                                       /\ AnyReadPerRegion(r)
+ConsistentPrefix == /\ \A r \in Regions : /\ MonotonicWritePerRegion(r)
+                                          /\ AnyReadPerRegion(r)
+                    /\ \A c \in Clients : /\ OneByOneReadPerClient(c)
 
 Strong == /\ Linearizability
           /\ Monotonic(History)
