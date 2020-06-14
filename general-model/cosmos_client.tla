@@ -130,7 +130,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     macro read()
     {
         (* I check prefix token for consistent_prefix *)
-        when Consistency /= "consistent_prefix" \/ Data[self[1]] = prefix_token + 1; 
+        when Consistency /= "consistent_prefix" \/ Data[self[1]] <= prefix_token + 1; 
         (* We check session token for session consistency *)
         when Consistency /= "session" \/ Data[self[1]] >= session_token;
         (* We check global value for strong consistency *)
@@ -324,7 +324,7 @@ AnyReadPerRegion(r) == \A i \in DOMAIN History : /\ History[i].type = "read"
 (* Operation in history h is monitonic *)
 Monotonic(h) == \A i, j \in DOMAIN h : i <= j => h[i].data <= h[j].data
 
-StrongMonotonicOneByOne(h) == \A i, j \in DOMAIN h : i < j => h[i].data + 1 = h[j].data
+StrongMonotonicOneByOne(h) == \A i, j \in DOMAIN h : i + 1 = j => h[i].data + 1 >= h[j].data
 
 (* Reads in region r are monotonic *)
 MonotonicReadPerRegion(r) == LET reads == [i \in {j \in DOMAIN History : /\ History[j].type = "read" 
