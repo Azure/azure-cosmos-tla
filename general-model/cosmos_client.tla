@@ -1,6 +1,6 @@
 --------------------------- MODULE cosmos_client ----------------------------
 (***************************************************************************)
-(* Microsoft Azure Cosmos DB TLA+ speciﬁcation for the five consistency    *)
+(* Microsoft Azure Cosmos DB TLA+ specification for the five consistency   *)
 (* levels the service offers. The spec focuses on the consistency          *)
 (* guarantees Cosmos DB provides to the clients, without the details of    *)
 (* the protocol implementation.                                            *)
@@ -59,8 +59,7 @@ Clients == {<<r, j>> : r \in Regions, j \in 1..NumClientsPerRegion}
 Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients]
        \union [type: {"read"}, data: Nat, region: Regions, client: Clients]
 
-(*
---algorithm cosmos_client
+(* --algorithm cosmos_client
 {
 
     variables (* Max staleness. Strong is a special case of bounded with K = 1 *)
@@ -82,8 +81,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
               (* Value used by clients *)
               value = 0;
               
-    define
-    {
+    define {
         \* Removing duplicates from a sequence:
         RECURSIVE RemDupRec(_,_)
         RemDupRec(es, seen) == IF es = <<>> THEN <<>>

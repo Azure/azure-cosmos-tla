@@ -5,8 +5,7 @@ ASSUME Consistency \in {"Eventual", "Consistent_Prefix", "Session", "Bounded_Sta
 ASSUME MaxNumOp<10 /\ NumClients=1
 Cloud == 0
 Clients == 1..NumClients
-(*
---algorithm swscop {
+(* --algorithm swscop {
 variables
    chan = [n \in 0..NumClients |-> <<>>];  \* FIFO channels 
 

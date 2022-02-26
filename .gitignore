@@ -328,3 +328,13 @@ ASALocalRun/
 
 # MFractors (Xamarin productivity tool) working folder 
 .mfractor/
+
+# TLC, Apalache, ... installed by install script.
+tools/
+
+# VSCode-tlaplus, TLC, Apalache temp files
+*/states/
+*/*.old
+*/*.out
+*/*.dot
+_apalache-out/
