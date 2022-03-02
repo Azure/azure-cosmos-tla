@@ -189,23 +189,30 @@ Messages ==
 \cup  [type : {"Reply", "Ack"}, dat: {0..Nat}, ses: {0..Nat}] 
 
 \* Invariants for single client(ID=1) writing with op++
-Eventual== chistory[1][Len(chistory[1])]  \in  {Database[Cloud][i]:i \in 1..Len(Database[Cloud])}
+Eventual == 
+    chistory[1][Len(chistory[1])] \in {Database[Cloud][i]: i \in 1..Len(Database[Cloud])}
 
-Consistent_Prefix  == chistory[1][Len(chistory[1])]  \in  {Database[Cloud][i]:i \in 1..Len(Database[Cloud])}
+Monotonic(history) ==
+    \* Assert monotonic reads.
+    \A i, j \in DOMAIN history : i <= j => history[i] <= history[j]
 
-Session == pc[1]="CW" => chistory[1][Len(chistory[1])]  \in  {Database[Cloud][i]:
-i \in ses[1]..Len(Database[Cloud])}
+Consistent_Prefix == 
+    /\ chistory[1][Len(chistory[1])] \in 
+        {Database[Cloud][i]: i \in 1..Len(Database[Cloud])}
+    /\ Monotonic(chistory[1])
 
-Bounded_Staleness == pc[1]="CW" => chistory[1][Len(chistory[1])]  \in  {Database[Cloud][i]:
-i \in (IF Len(Database[Cloud])>K THEN Len(Database[Cloud])-K ELSE 1)..Len(Database[Cloud])}
+Session == pc[1]="CW" =>
+    /\ chistory[1][Len(chistory[1])] \in
+        {Database[Cloud][i]: i \in ses[1]..Len(Database[Cloud])}
+    /\ Monotonic(chistory[1])
 
-Strong  == pc[1]="CW" => chistory[1][Len(chistory[1])]  = Database[Cloud][Len(Database[Cloud])]
+Bounded_Staleness == pc[1]="CW" => 
+    /\ chistory[1][Len(chistory[1])] \in
+        {Database[Cloud][i]: i \in (IF Len(Database[Cloud])>K THEN Len(Database[Cloud])-K ELSE 1)..Len(Database[Cloud])}
+    /\ Monotonic(chistory[1])
+
+Strong == pc[1]="CW" =>
+    /\ chistory[1][Len(chistory[1])] = Database[Cloud][Len(Database[Cloud])]
+    /\ Monotonic(chistory[1])
 
 =============================================================================
-
-
-
-
-
-
-               
