@@ -96,12 +96,6 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
         SeqToSet(s) == {s[i] : i \in DOMAIN s}
                      
         Last(s) == s[Len(s)]
-
-        MaxLen(c) == LET region == CHOOSE i \in Regions : \A j \in Regions : Len(c[i]) >= Len(c[j])
-                     IN Len(c[region])
-        
-        MinLen(c) == LET region == CHOOSE i \in Regions : \A j \in Regions : Len(c[i]) <= Len(c[j])
-                     IN Len(c[region])
     }
     
     (* -------------------------------------------------------------- *)
@@ -207,12 +201,6 @@ SetMax(S) == IF S = {} THEN -1
 SeqToSet(s) == {s[i] : i \in DOMAIN s}
 
 Last(s) == s[Len(s)]
-
-MaxLen(c) == LET region == CHOOSE i \in Regions : \A j \in Regions : Len(c[i]) >= Len(c[j])
-             IN Len(c[region])
-
-MinLen(c) == LET region == CHOOSE i \in Regions : \A j \in Regions : Len(c[i]) <= Len(c[j])
-             IN Len(c[region])
 
 VARIABLES session_token, numOp
 
@@ -343,10 +331,6 @@ ReadAfterWrite == \A i, j \in DOMAIN History : /\ i < j
                                                
 Linearizability == \A i, j \in DOMAIN History : /\ i < j
                                                 => History[j].data >= History[i].data
-                                               
-LastOperation(c) == LET i == SetMax({j \in DOMAIN History : History[j].client = c})
-                    IN IF i > 0 THEN History[i] ELSE <<>>
-
 
 BoundedStaleness == /\ \A i, j \in Regions : Data[i] - Data[j] <= K
                     /\ \A r \in Regions : MonotonicReadPerRegion(r)

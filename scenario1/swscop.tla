@@ -1,5 +1,5 @@
 -------------------------- MODULE swscop --------------------------
-EXTENDS Naturals, Integers, Sequences, FiniteSets, TLC, Bags
+EXTENDS Naturals, Integers, Sequences, FiniteSets
 CONSTANT NumClients, MaxNumOp, Consistency, K
 ASSUME Consistency \in {"Eventual", "Consistent_Prefix", "Session", "Bounded_Staleness", "Strong"}
 ASSUME MaxNumOp<10 /\ NumClients=1
