@@ -111,14 +111,14 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     (* Regular write at local region *)
     macro write(v)
     {
-        if (self[1] \in WriteRegions)
+        with (w \in WriteRegions)
         {
             when \A i, j \in Regions : Data[i] - Data[j] < Bound;
-            Database[self[1]] := Append(@, v);
-            Data[self[1]] := v;
+            Database[w] := Append(@, v);
+            Data[w] := v;
             History := Append(History, [type |-> "write",
                                         data |-> v,
-                                      region |-> self[1],
+                                      region |-> w,
                                       client |-> self]);
             session_token := v;
         }
@@ -248,18 +248,15 @@ client_actions(self) == /\ pc[self] = "client_actions"
 
 write(self) == /\ pc[self] = "write"
                /\ value' = value + 1
-               /\ IF self[1] \in WriteRegions
-                     THEN /\ \A i, j \in Regions : Data[i] - Data[j] < Bound
-                          /\ Database' = [Database EXCEPT ![self[1]] = Append(@, value')]
-                          /\ Data' = [Data EXCEPT ![self[1]] = value']
-                          /\ History' = Append(History, [type |-> "write",
-                                                         data |-> value',
-                                                       region |-> self[1],
-                                                       client |-> self])
-                          /\ session_token' = [session_token EXCEPT ![self] = value']
-                     ELSE /\ TRUE
-                          /\ UNCHANGED << History, Data, Database, 
-                                          session_token >>
+               /\ \E w \in WriteRegions:
+                    /\ \A i, j \in Regions : Data[i] - Data[j] < Bound
+                    /\ Database' = [Database EXCEPT ![w] = Append(@, value')]
+                    /\ Data' = [Data EXCEPT ![w] = value']
+                    /\ History' = Append(History, [type |-> "write",
+                                                   data |-> value',
+                                                 region |-> w,
+                                                 client |-> self])
+                    /\ session_token' = [session_token EXCEPT ![self] = value']
                /\ pc' = [pc EXCEPT ![self] = "client_actions"]
                /\ UNCHANGED << Bound, numOp >>
 
