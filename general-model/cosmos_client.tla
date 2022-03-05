@@ -39,7 +39,7 @@ CONSTANT MaxNumOp
 (***************************************************************************)
 CONSTANT Consistency
 
-ASSUME Consistency \in {"strong", "bounded_staleness", "session", "consistent_prefix", "eventual"}
+ASSUME Consistency \in {"Strong", "Bounded_staleness", "Session", "Consistent_prefix", "Eventual"}
 
 (* The bounded version differences in Bounded Staleness consistency *)
 CONSTANT K
@@ -63,11 +63,11 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
 {
 
     variables (* Max staleness. Strong is a special case of bounded with K = 1 *)
-              Bound = CASE Consistency = "strong" -> 1
-                        [] Consistency = "bounded_staleness" -> K
-                        [] Consistency = "session" -> MaxNumOp
-                        [] Consistency = "consistent_prefix" -> MaxNumOp
-                        [] Consistency = "eventual" -> MaxNumOp;
+              Bound = CASE Consistency = "Strong" -> 1
+                        [] Consistency = "Bounded_staleness" -> K
+                        [] Consistency = "Session" -> MaxNumOp
+                        [] Consistency = "Consistent_prefix" -> MaxNumOp
+                        [] Consistency = "Eventual" -> MaxNumOp;
                         
               (* Client operation history *)
               History = <<>>;
@@ -128,9 +128,9 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     macro read()
     {
         (* We check session token for session consistency *)
-        when Consistency /= "session" \/ Data[self[1]] >= session_token;
+        when Consistency /= "Session" \/ Data[self[1]] >= session_token;
         (* We check global value for strong consistency *)
-        when Consistency /= "strong" \/ \A i, j \in Regions : Data[i] = Data[j];
+        when Consistency /= "Strong" \/ \A i, j \in Regions : Data[i] = Data[j];
         History := Append(History, [type |-> "read",
                                     data |-> Data[self[1]],
                                   region |-> self[1],
@@ -221,11 +221,11 @@ vars == << Bound, History, Data, Database, value, pc, session_token, numOp >>
 ProcSet == (Clients) \cup {<<0, 0>>}
 
 Init == (* Global variables *)
-        /\ Bound = (CASE Consistency = "strong" -> 1
-                      [] Consistency = "bounded_staleness" -> K
-                      [] Consistency = "session" -> MaxNumOp
-                      [] Consistency = "consistent_prefix" -> MaxNumOp
-                      [] Consistency = "eventual" -> MaxNumOp)
+        /\ Bound = (CASE Consistency = "Strong" -> 1
+                      [] Consistency = "Bounded_staleness" -> K
+                      [] Consistency = "Session" -> MaxNumOp
+                      [] Consistency = "Consistent_prefix" -> MaxNumOp
+                      [] Consistency = "Eventual" -> MaxNumOp)
         /\ History = <<>>
         /\ Data = [r \in Regions |-> 0]
         /\ Database = [r \in Regions |-> <<>>]
@@ -264,8 +264,8 @@ write(self) == /\ pc[self] = "write"
                /\ UNCHANGED << Bound, numOp >>
 
 read(self) == /\ pc[self] = "read"
-              /\ Consistency /= "session" \/ Data[self[1]] >= session_token[self]
-              /\ Consistency /= "strong" \/ \A i, j \in Regions : Data[i] = Data[j]
+              /\ Consistency /= "Session" \/ Data[self[1]] >= session_token[self]
+              /\ Consistency /= "Strong" \/ \A i, j \in Regions : Data[i] = Data[j]
               /\ History' = Append(History, [type |-> "read",
                                              data |-> Data[self[1]],
                                            region |-> self[1],
@@ -370,11 +370,11 @@ Eventual == \A i \in DOMAIN History :
             IN History[i].data \in {Database[r][j] : j \in DOMAIN Database[r]} \union {0}
 
 Invariant == /\ TypeOK
-             /\ CASE Consistency = "strong" -> Strong
-                  [] Consistency = "bounded_staleness" -> BoundedStaleness
-                  [] Consistency = "session" -> Session
-                  [] Consistency = "consistent_prefix" -> ConsistentPrefix
-                  [] Consistency = "eventual" -> Eventual
+             /\ CASE Consistency = "Strong" -> Strong
+                  [] Consistency = "Bounded_staleness" -> BoundedStaleness
+                  [] Consistency = "Session" -> Session
+                  [] Consistency = "Consistent_prefix" -> ConsistentPrefix
+                  [] Consistency = "Eventual" -> Eventual
 
 Liveness == <>[] (\A i, j \in Regions : Database[i] = Database[j])
 
