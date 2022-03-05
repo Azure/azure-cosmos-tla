@@ -51,7 +51,7 @@ Regions == 1..NumRegions
 (* All writable regions in topology *)
 WriteRegions == 1..NumWriteRegions
 (* All clients with local region *)
-Clients == {<<r, j>> : r \in Regions, j \in 1..NumClientsPerRegion}
+Clients == Regions \X (1..NumClientsPerRegion)
 
 (* Max staleness. Strong is a special case of bounded with K = 1 *)
 Bound ==
