@@ -25,11 +25,6 @@ CONSTANT NumClientsPerRegion
 ASSUME NumClientsPerRegion \in Nat
 
 (***************************************************************************)
-(* MaxNumOp max number of operations from client                           *)
-(***************************************************************************)
-CONSTANT MaxNumOp
-
-(***************************************************************************)
 (* Consistency level                                                       *)
 (* (1) strong (Linearizability)                                            *)
 (* (2) bounded (Bounded Staleness)                                         *)
@@ -57,9 +52,9 @@ Clients == Regions \X (1..NumClientsPerRegion)
 Bound ==
     CASE Consistency = "Strong" -> 1
         [] Consistency = "Bounded_staleness" -> K
-        [] Consistency = "Session" -> MaxNumOp
-        [] Consistency = "Consistent_prefix" -> MaxNumOp
-        [] Consistency = "Eventual" -> MaxNumOp
+        [] Consistency = "Session" -> 100 \* effectively infinite.
+        [] Consistency = "Consistent_prefix" -> 100
+        [] Consistency = "Eventual" -> 100
 
 (***************************************************************************)
 (* All possible operations in history                                      *)
@@ -150,12 +145,10 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     (* -------------------------------------------------------------- *)
     fair process (client \in Clients)
     variable session_token = 0;
-    numOp = 0;
     {
         client_actions:
-        while(numOp < MaxNumOp)
+        while(TRUE)
         {
-            numOp := numOp + 1;
             either
             {
                 write:
@@ -193,9 +186,9 @@ RemoveDuplicates(es) == RemDupRec(es, {})
 
 Last(s) == s[Len(s)]
 
-VARIABLES session_token, numOp
+VARIABLE session_token
 
-vars == << History, Data, Database, value, pc, session_token, numOp >>
+vars == << History, Data, Database, value, pc, session_token >>
 
 ProcSet == (Clients) \cup {<<0, 0>>}
 
@@ -206,17 +199,12 @@ Init == (* Global variables *)
         /\ value = 0
         (* Process client *)
         /\ session_token = [self \in Clients |-> 0]
-        /\ numOp = [self \in Clients |-> 0]
         /\ pc = [self \in ProcSet |-> CASE self \in Clients -> "client_actions"
                                         [] self = <<0, 0>> -> "database_action"]
 
 client_actions(self) == /\ pc[self] = "client_actions"
-                        /\ IF numOp[self] < MaxNumOp
-                              THEN /\ numOp' = [numOp EXCEPT ![self] = numOp[self] + 1]
-                                   /\ \/ /\ pc' = [pc EXCEPT ![self] = "write"]
-                                      \/ /\ pc' = [pc EXCEPT ![self] = "read"]
-                              ELSE /\ pc' = [pc EXCEPT ![self] = "Done"]
-                                   /\ numOp' = numOp
+                        /\ \/ /\ pc' = [pc EXCEPT ![self] = "write"]
+                           \/ /\ pc' = [pc EXCEPT ![self] = "read"]
                         /\ UNCHANGED << History, Data, Database, value, 
                                         session_token >>
 
@@ -232,7 +220,6 @@ write(self) == /\ pc[self] = "write"
                                                  client |-> self])
                     /\ session_token' = [session_token EXCEPT ![self] = value']
                /\ pc' = [pc EXCEPT ![self] = "client_actions"]
-               /\ numOp' = numOp
 
 read(self) == /\ pc[self] = "read"
               /\ Consistency /= "Session" \/ Data[self[1]] >= session_token[self]
@@ -243,7 +230,7 @@ read(self) == /\ pc[self] = "read"
                                            client |-> self])
               /\ session_token' = [session_token EXCEPT ![self] = Data[self[1]]]
               /\ pc' = [pc EXCEPT ![self] = "client_actions"]
-              /\ UNCHANGED << Data, Database, value, numOp >>
+              /\ UNCHANGED << Data, Database, value >>
 
 client(self) == client_actions(self) \/ write(self) \/ read(self)
 
@@ -256,7 +243,7 @@ database_action == /\ pc[<<0, 0>>] = "database_action"
                                 ELSE /\ TRUE
                                      /\ Data' = Data
                    /\ pc' = [pc EXCEPT ![<<0, 0>>] = "database_action"]
-                   /\ UNCHANGED << History, value, session_token, numOp >>
+                   /\ UNCHANGED << History, value, session_token >>
 
 CosmosDB == database_action
 
@@ -268,7 +255,6 @@ Spec == /\ Init /\ [][Next]_vars
         /\ WF_vars(CosmosDB)
 
 \* END TRANSLATION
-
 
 -----------------------------------------------------------------------------
 
@@ -347,6 +333,11 @@ Invariant == /\ TypeOK
                   [] Consistency = "Eventual" -> Eventual
 
 Liveness == <>[] (\A i, j \in Regions : Database[i] = Database[j])
+
+-----------------------------------------------------------------------------
+(* Constraint the states-space to be finite for model-checking. *)
+MaxNumOp ==
+    Len(History) < 7
 
 =============================================================================
 \* Authored by Cosmos DB

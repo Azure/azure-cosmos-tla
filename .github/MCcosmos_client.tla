@@ -32,9 +32,10 @@ mcStrong ==
 --------------------------- CONFIG MCcosmos_client --------------------------
 SPECIFICATION Spec
 \* Add statements after this line.
+CONSTRAINT 
+    MaxNumOp
 CONSTANT
-MaxNumOp = 3
-K = 1
+    K = 1
 CONSTANT
     NumRegions <- mcNumRegions
     NumWriteRegions <- mcNumWriteRegions
