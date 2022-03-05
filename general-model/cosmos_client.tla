@@ -6,7 +6,7 @@
 (* the protocol implementation.                                            *)
 (***************************************************************************)
 
-EXTENDS Naturals, Integers, Reals, Sequences, FiniteSets, TLC
+EXTENDS Integers, Sequences, FiniteSets, TLC
 
 (***************************************************************************)
 (* Number of regions                                                       *)
