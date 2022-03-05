@@ -53,6 +53,14 @@ WriteRegions == 1..NumWriteRegions
 (* All clients with local region *)
 Clients == {<<r, j>> : r \in Regions, j \in 1..NumClientsPerRegion}
 
+(* Max staleness. Strong is a special case of bounded with K = 1 *)
+Bound ==
+    CASE Consistency = "Strong" -> 1
+        [] Consistency = "Bounded_staleness" -> K
+        [] Consistency = "Session" -> MaxNumOp
+        [] Consistency = "Consistent_prefix" -> MaxNumOp
+        [] Consistency = "Eventual" -> MaxNumOp
+
 (***************************************************************************)
 (* All possible operations in history                                      *)
 (***************************************************************************)
@@ -62,14 +70,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
 (* --algorithm cosmos_client
 {
 
-    variables (* Max staleness. Strong is a special case of bounded with K = 1 *)
-              Bound = CASE Consistency = "Strong" -> 1
-                        [] Consistency = "Bounded_staleness" -> K
-                        [] Consistency = "Session" -> MaxNumOp
-                        [] Consistency = "Consistent_prefix" -> MaxNumOp
-                        [] Consistency = "Eventual" -> MaxNumOp;
-                        
-              (* Client operation history *)
+    variables (* Client operation history *)
               History = <<>>;
               
               (* Latest data value in each region *)
@@ -185,7 +186,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
 }
 *)
 \* BEGIN TRANSLATION
-VARIABLES Bound, History, Data, Database, value, pc
+VARIABLES History, Data, Database, value, pc
 
 (* define statement *)
 RECURSIVE RemDupRec(_,_)
@@ -204,16 +205,11 @@ Last(s) == s[Len(s)]
 
 VARIABLES session_token, numOp
 
-vars == << Bound, History, Data, Database, value, pc, session_token, numOp >>
+vars == << History, Data, Database, value, pc, session_token, numOp >>
 
 ProcSet == (Clients) \cup {<<0, 0>>}
 
 Init == (* Global variables *)
-        /\ Bound = (CASE Consistency = "Strong" -> 1
-                      [] Consistency = "Bounded_staleness" -> K
-                      [] Consistency = "Session" -> MaxNumOp
-                      [] Consistency = "Consistent_prefix" -> MaxNumOp
-                      [] Consistency = "Eventual" -> MaxNumOp)
         /\ History = <<>>
         /\ Data = [r \in Regions |-> 0]
         /\ Database = [r \in Regions |-> <<>>]
@@ -231,7 +227,7 @@ client_actions(self) == /\ pc[self] = "client_actions"
                                       \/ /\ pc' = [pc EXCEPT ![self] = "read"]
                               ELSE /\ pc' = [pc EXCEPT ![self] = "Done"]
                                    /\ numOp' = numOp
-                        /\ UNCHANGED << Bound, History, Data, Database, value, 
+                        /\ UNCHANGED << History, Data, Database, value, 
                                         session_token >>
 
 write(self) == /\ pc[self] = "write"
@@ -246,7 +242,7 @@ write(self) == /\ pc[self] = "write"
                                                  client |-> self])
                     /\ session_token' = [session_token EXCEPT ![self] = value']
                /\ pc' = [pc EXCEPT ![self] = "client_actions"]
-               /\ UNCHANGED << Bound, numOp >>
+               /\ numOp' = numOp
 
 read(self) == /\ pc[self] = "read"
               /\ Consistency /= "Session" \/ Data[self[1]] >= session_token[self]
@@ -257,7 +253,7 @@ read(self) == /\ pc[self] = "read"
                                            client |-> self])
               /\ session_token' = [session_token EXCEPT ![self] = Data[self[1]]]
               /\ pc' = [pc EXCEPT ![self] = "client_actions"]
-              /\ UNCHANGED << Bound, Data, Database, value, numOp >>
+              /\ UNCHANGED << Data, Database, value, numOp >>
 
 client(self) == client_actions(self) \/ write(self) \/ read(self)
 
@@ -270,7 +266,7 @@ database_action == /\ pc[<<0, 0>>] = "database_action"
                                 ELSE /\ TRUE
                                      /\ Data' = Data
                    /\ pc' = [pc EXCEPT ![<<0, 0>>] = "database_action"]
-                   /\ UNCHANGED << Bound, History, value, session_token, numOp >>
+                   /\ UNCHANGED << History, value, session_token, numOp >>
 
 CosmosDB == database_action
 
