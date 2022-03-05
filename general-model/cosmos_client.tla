@@ -90,12 +90,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
                                ELSE <<es[1]>> \o RemDupRec(Tail(es), seen \cup {es[1]})
                                          
         RemoveDuplicates(es) == RemDupRec(es, {})
-        
-        SetMax(S) == IF S = {} THEN -1
-                     ELSE CHOOSE i \in S : \A j \in S : i >= j
-                     
-        SeqToSet(s) == {s[i] : i \in DOMAIN s}
-                     
+                             
         Last(s) == s[Len(s)]
     }
     
@@ -196,11 +191,6 @@ RemDupRec(es, seen) == IF es = <<>> THEN <<>>
 
 RemoveDuplicates(es) == RemDupRec(es, {})
 
-SetMax(S) == IF S = {} THEN -1
-             ELSE CHOOSE i \in S : \A j \in S : i >= j
-
-SeqToSet(s) == {s[i] : i \in DOMAIN s}
-
 Last(s) == s[Len(s)]
 
 VARIABLES session_token, numOp
@@ -287,10 +277,13 @@ Spec == /\ Init /\ [][Next]_vars
 (* Check elements in History are type of Opertion *)
 TypeOK == {History[i] : i \in DOMAIN History} \subseteq Operations
 
+                     
+Range(s) == {s[i] : i \in DOMAIN s}
+
 (* Read value in any regional database history *)                       
 AnyReadPerRegion(r) == \A i \in DOMAIN History : /\ History[i].type = "read"
                                                  /\ History[i].region = r
-                                                 => History[i].data \in SeqToSet(Database[r]) \union {0}
+                                                 => History[i].data \in Range(Database[r]) \union {0}
 
 (* Operation in history h is monitonic *)
 Monotonic(h) == \A i, j \in DOMAIN h : i <= j => h[i].data <= h[j].data
