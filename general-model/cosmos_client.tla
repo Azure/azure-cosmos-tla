@@ -151,11 +151,10 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
         {
             either
             {
-                write:
                 value := value + 1;
                 write(value);
             }
-            or read: read();
+            or read();
         }
     }
     
@@ -174,7 +173,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
 }
 *)
 \* BEGIN TRANSLATION
-VARIABLES History, Data, Database, value, pc
+VARIABLES History, Data, Database, value
 
 (* define statement *)
 RECURSIVE RemDupRec(_,_)
@@ -188,7 +187,7 @@ Last(s) == s[Len(s)]
 
 VARIABLE session_token
 
-vars == << History, Data, Database, value, pc, session_token >>
+vars == << History, Data, Database, value, session_token >>
 
 ProcSet == (Clients) \cup {<<0, 0>>}
 
@@ -199,53 +198,34 @@ Init == (* Global variables *)
         /\ value = 0
         (* Process client *)
         /\ session_token = [self \in Clients |-> 0]
-        /\ pc = [self \in ProcSet |-> CASE self \in Clients -> "client_actions"
-                                        [] self = <<0, 0>> -> "database_action"]
 
-client_actions(self) == /\ pc[self] = "client_actions"
-                        /\ \/ /\ pc' = [pc EXCEPT ![self] = "write"]
-                           \/ /\ pc' = [pc EXCEPT ![self] = "read"]
-                        /\ UNCHANGED << History, Data, Database, value, 
-                                        session_token >>
+client(self) == \/ /\ value' = value + 1
+                   /\ \E w \in WriteRegions:
+                        /\ \A i, j \in Regions : Data[i] - Data[j] \in Bound
+                        /\ Database' = [Database EXCEPT ![w] = Append(@, value')]
+                        /\ Data' = [Data EXCEPT ![w] = value']
+                        /\ History' = Append(History, [type |-> "write",
+                                                       data |-> value',
+                                                     region |-> w,
+                                                     client |-> self])
+                        /\ session_token' = [session_token EXCEPT ![self] = value']
+                \/ /\ Consistency /= "Session" \/ Data[self[1]] >= session_token[self]
+                   /\ Consistency /= "Strong" \/ \A i, j \in Regions : Data[i] = Data[j]
+                   /\ History' = Append(History, [type |-> "read",
+                                                  data |-> Data[self[1]],
+                                                region |-> self[1],
+                                                client |-> self])
+                   /\ session_token' = [session_token EXCEPT ![self] = Data[self[1]]]
+                   /\ UNCHANGED <<Data, Database, value>>
 
-write(self) == /\ pc[self] = "write"
-               /\ value' = value + 1
-               /\ \E w \in WriteRegions:
-                    /\ \A i, j \in Regions : Data[i] - Data[j] \in Bound
-                    /\ Database' = [Database EXCEPT ![w] = Append(@, value')]
-                    /\ Data' = [Data EXCEPT ![w] = value']
-                    /\ History' = Append(History, [type |-> "write",
-                                                   data |-> value',
-                                                 region |-> w,
-                                                 client |-> self])
-                    /\ session_token' = [session_token EXCEPT ![self] = value']
-               /\ pc' = [pc EXCEPT ![self] = "client_actions"]
-
-read(self) == /\ pc[self] = "read"
-              /\ Consistency /= "Session" \/ Data[self[1]] >= session_token[self]
-              /\ Consistency /= "Strong" \/ \A i, j \in Regions : Data[i] = Data[j]
-              /\ History' = Append(History, [type |-> "read",
-                                             data |-> Data[self[1]],
-                                           region |-> self[1],
-                                           client |-> self])
-              /\ session_token' = [session_token EXCEPT ![self] = Data[self[1]]]
-              /\ pc' = [pc EXCEPT ![self] = "client_actions"]
-              /\ UNCHANGED << Data, Database, value >>
-
-client(self) == client_actions(self) \/ write(self) \/ read(self)
-
-database_action == /\ pc[<<0, 0>>] = "database_action"
-                   /\ \E s \in WriteRegions:
-                        \E d \in Regions:
-                          /\ Database' = [Database EXCEPT ![d] = RemoveDuplicates(SortSeq(Database[d] \o Database[s], <))]
-                          /\ IF Len(Database'[d]) > 0
-                                THEN /\ Data' = [Data EXCEPT ![d] = Last(Database'[d])]
-                                ELSE /\ TRUE
-                                     /\ Data' = Data
-                   /\ pc' = [pc EXCEPT ![<<0, 0>>] = "database_action"]
-                   /\ UNCHANGED << History, value, session_token >>
-
-CosmosDB == database_action
+CosmosDB == /\ \E s \in WriteRegions:
+                 \E d \in Regions:
+                   /\ Database' = [Database EXCEPT ![d] = RemoveDuplicates(SortSeq(Database[d] \o Database[s], <))]
+                   /\ IF Len(Database'[d]) > 0
+                         THEN /\ Data' = [Data EXCEPT ![d] = Last(Database'[d])]
+                         ELSE /\ TRUE
+                              /\ Data' = Data
+            /\ UNCHANGED << History, value, session_token >>
 
 Next == CosmosDB
            \/ (\E self \in Clients: client(self))
