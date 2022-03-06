@@ -50,11 +50,11 @@ Clients == Regions \X (1..NumClientsPerRegion)
 
 (* Max staleness. Strong is a special case of bounded with K = 1 *)
 Bound ==
-    CASE Consistency = "Strong" -> 1
-        [] Consistency = "Bounded_staleness" -> K
-        [] Consistency = "Session" -> 100 \* effectively infinite.
-        [] Consistency = "Consistent_prefix" -> 100
-        [] Consistency = "Eventual" -> 100
+    CASE Consistency = "Strong" -> {0}
+        [] Consistency = "Bounded_staleness" -> -(K-1)..(K-1)
+        [] Consistency = "Session" -> Int
+        [] Consistency = "Consistent_prefix" -> Int
+        [] Consistency = "Eventual" -> Int
 
 (***************************************************************************)
 (* All possible operations in history                                      *)
@@ -98,7 +98,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     {
         with (w \in WriteRegions)
         {
-            when \A i, j \in Regions : Data[i] - Data[j] < Bound;
+            when \A i, j \in Regions : Data[i] - Data[j] \in Bound;
             Database[w] := Append(@, v);
             Data[w] := v;
             History := Append(History, [type |-> "write",
@@ -211,7 +211,7 @@ client_actions(self) == /\ pc[self] = "client_actions"
 write(self) == /\ pc[self] = "write"
                /\ value' = value + 1
                /\ \E w \in WriteRegions:
-                    /\ \A i, j \in Regions : Data[i] - Data[j] < Bound
+                    /\ \A i, j \in Regions : Data[i] - Data[j] \in Bound
                     /\ Database' = [Database EXCEPT ![w] = Append(@, value')]
                     /\ Data' = [Data EXCEPT ![w] = value']
                     /\ History' = Append(History, [type |-> "write",
@@ -307,7 +307,7 @@ ReadAfterWrite == \A i, j \in DOMAIN History : /\ i < j
 Linearizability == \A i, j \in DOMAIN History : /\ i < j
                                                 => History[j].data >= History[i].data
 
-BoundedStaleness == /\ \A i, j \in Regions : Data[i] - Data[j] <= K
+BoundedStaleness == /\ \A i, j \in Regions : Data[i] - Data[j] \in -K..K
                     /\ \A r \in Regions : MonotonicReadPerRegion(r)
                     /\ ReadYourWrite
 
