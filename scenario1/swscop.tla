@@ -1,8 +1,8 @@
 -------------------------- MODULE swscop --------------------------
 EXTENDS Naturals, Integers, Sequences, FiniteSets
-CONSTANT NumClients, MaxNumOp, Consistency, K
+CONSTANT NumClients, Consistency, K
 ASSUME Consistency \in {"Eventual", "Consistent_Prefix", "Session", "Bounded_Staleness", "Strong"}
-ASSUME MaxNumOp<10 /\ NumClients=1
+ASSUME NumClients=1
 Cloud == 0
 Clients == 1..NumClients
 (* --algorithm swscop {
@@ -50,7 +50,7 @@ variables
     variables
         m = <<>>; op=0; chistory = <<0>>; ses=1; 
     {
-     CW: while(op<MaxNumOp) {             
+     CW: while(TRUE) {             
            op:=op+1; 
            send(Cloud, [type |-> "Write", dat |-> op, ses|->ses, orig |-> self]);
      CWA:  receive(m); \* Ack
@@ -145,12 +145,9 @@ cosmosdb(self) == D(self) \/ DW(self) \/ DE(self) \/ DP(self) \/ DS(self)
                      \/ DB(self) \/ DG(self)
 
 CW(self) == /\ pc[self] = "CW"
-            /\ IF op[self]<MaxNumOp
-                  THEN /\ op' = [op EXCEPT ![self] = op[self]+1]
-                       /\ chan' = [chan EXCEPT ![Cloud] = Append(chan[Cloud], ([type |-> "Write", dat |-> op'[self], ses|->ses[self], orig |-> self]))]
-                       /\ pc' = [pc EXCEPT ![self] = "CWA"]
-                  ELSE /\ pc' = [pc EXCEPT ![self] = "Done"]
-                       /\ UNCHANGED << chan, op >>
+            /\ op' = [op EXCEPT ![self] = op[self]+1]
+            /\ chan' = [chan EXCEPT ![Cloud] = Append(chan[Cloud], ([type |-> "Write", dat |-> op'[self], ses|->ses[self], orig |-> self]))]
+            /\ pc' = [pc EXCEPT ![self] = "CWA"]
             /\ UNCHANGED << Database, msg, m, chistory, ses >>
 
 CWA(self) == /\ pc[self] = "CWA"

@@ -1,8 +1,8 @@
 -------------------------- MODULE swscrw --------------------------
 EXTENDS Naturals, Integers, Sequences, FiniteSets
-CONSTANT NumClients, MaxNumOp, Consistency, K
+CONSTANT NumClients, Consistency, K
 ASSUME Consistency \in {"Eventual", "Consistent_Prefix", "Session", "Bounded_Staleness", "Strong"}
-ASSUME MaxNumOp<10 /\ NumClients=1
+ASSUME NumClients=1
 Cloud == 0
 Clients == 1..NumClients
 (* --algorithm swscrw {
@@ -50,7 +50,7 @@ variables
     variables
         m = <<>>; op=0; v=0; chistory = <<0>>; ses=1; 
     {
-     CR: while(op<MaxNumOp) {
+     CR: while(TRUE) {
            send(Cloud, [type |-> Consistency, ses|->ses, orig |-> self]); \* read
      CRA:  receive(m);  \* Reply      
            chistory:= Append(chistory,m.dat);
@@ -147,11 +147,8 @@ cosmosdb(self) == D(self) \/ DW(self) \/ DE(self) \/ DP(self) \/ DS(self)
                      \/ DB(self) \/ DG(self)
 
 CR(self) == /\ pc[self] = "CR"
-            /\ IF op[self]<MaxNumOp
-                  THEN /\ chan' = [chan EXCEPT ![Cloud] = Append(chan[Cloud], ([type |-> Consistency, ses|->ses[self], orig |-> self]))]
-                       /\ pc' = [pc EXCEPT ![self] = "CRA"]
-                  ELSE /\ pc' = [pc EXCEPT ![self] = "Done"]
-                       /\ chan' = chan
+            /\ chan' = [chan EXCEPT ![Cloud] = Append(chan[Cloud], ([type |-> Consistency, ses|->ses[self], orig |-> self]))]
+            /\ pc' = [pc EXCEPT ![self] = "CRA"]
             /\ UNCHANGED << Database, msg, m, op, v, chistory, ses >>
 
 CRA(self) == /\ pc[self] = "CRA"

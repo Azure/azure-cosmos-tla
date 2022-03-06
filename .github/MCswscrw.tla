@@ -1,11 +1,11 @@
 ------------------------- MODULE MCswscrw -------------------------
 EXTENDS swscrw, IOUtils
 
+MaxNumOp ==
+    \A i \in Clients: op[i] < 5
+
 mcNumClients ==
     1
-
-mcMaxNumOp ==
-    5
 
 mcK ==
     2
@@ -45,8 +45,9 @@ SPECIFICATION Spec
 \* Add statements after this line.
 CHECK_DEADLOCK 
     FALSE
+CONSTRAINT
+    MaxNumOp
 CONSTANT
-    MaxNumOp <- mcMaxNumOp
     NumClients <- mcNumClients
     Consistency <- mcConsistency
     K <- mcK
