@@ -23,19 +23,21 @@ Consistency ==
 Check(conf, isWeaker, folder, model) ==
     LET ret == IOEnvExecTemplate(conf, Cmd, <<AbsolutePathOfTLC, folder, model>>).exitValue
     IN CASE ret =  0 ->
-                IF isWeaker THEN TRUE ELSE
-                \* Consistency-level is weaker than the property.
-                Print(<<folder, conf, "Missing violation">>, TRUE)
+                IF   isWeaker
+                THEN Print(<<folder, model, conf, "OK">>, TRUE)
+                ELSE \* Consistency-level is weaker than the property.
+                     Print(<<folder, model, conf, "Missing violation">>, FALSE)
          [] ret = 10 -> 
-                Print(<<folder, conf, "Assumption violation">>, FALSE)
+                Print(<<folder, model, conf, "Assumption violation">>, FALSE)
          [] ret = 12 -> 
-                IF ~isWeaker THEN TRUE ELSE
-                \* Consistency-level is equal to or stronger than the property.
-                Print(<<folder, conf, "Safety violation">>, TRUE)
+                IF   ~isWeaker
+                THEN Print(<<folder, model, conf, "OK: Expected safety violation">>, TRUE)
+                ELSE \* Consistency-level is equal to or stronger than the property.
+                     Print(<<folder, model, conf, "Safety violation">>, FALSE)
          [] ret = 13 -> 
-                Print(<<folder, conf, "Liveness violation">>, FALSE)
+                Print(<<folder, model, conf, "Liveness violation">>, FALSE)
          [] OTHER    -> 
-                Print(<<folder, conf, IOEnvExecTemplate(conf, Cmd, <<AbsolutePathOfTLC, folder, model>>), "Error">>, FALSE)
+                Print(<<folder, model, conf, IOEnvExecTemplate(conf, Cmd, <<AbsolutePathOfTLC, folder, model>>), "Error">>, FALSE)
 
 ASSUME 
     \A comb \in ((DOMAIN Consistency) \X (DOMAIN Consistency)) :
@@ -57,17 +59,47 @@ ASSUME
                        \/ /\ conf.mcConsistency = "Session" \* With one writer, Session => Strong
                           /\ conf.mcProperty = "Strong", "scenario2", "MCswscrw.tla")
 
-ASSUME
-    \A comb \in ((DOMAIN Consistency) \X (DOMAIN Consistency) \X {2} \X {1,2} \X {1,2}) : \* Due to the way the spec is modeled, a single region provides strong consistency. Thus, do not chec a single region.
-        LET conf == [ 
-                        mcConsistency |-> Consistency[comb[1]], 
-                        mcProperty |-> Consistency[comb[2]],
-                        mcNumRegions |-> comb[3],
-                        mcNumWriteRegions |-> comb[4],
-                        mcNumClientsPerRegion |-> comb[5]
-                    ]
-        IN conf.mcNumRegions >= conf.mcNumWriteRegions =>
-                Check(conf, comb[1] >= comb[2], "general-model", "MCcosmos_client.tla")
+\* ASSUME
+\*     \A comb \in ((DOMAIN Consistency) \X (DOMAIN Consistency) \X {2} \X {1,2} \X {1,2}) : \* Due to the way the spec is modeled, a single region provides strong consistency. Thus, do not chec a single region.
+\*         LET conf == [ 
+\*                         mcConsistency |-> Consistency[comb[1]], 
+\*                         mcProperty |-> Consistency[comb[2]],
+\*                         mcNumRegions |-> comb[3],
+\*                         mcNumWriteRegions |-> comb[4],
+\*                         mcNumClientsPerRegion |-> comb[5]
+\*                     ]
+\*         IN conf.mcNumRegions >= conf.mcNumWriteRegions =>
+\*                 Check(conf, comb[1] >= comb[2], "general-model", "MCcosmos_client.tla")
+
+\* not sure why this doesn't work?
+\* ASSUME Check(<<>>, TRUE, "general-model", "MCcosmos_client")
+
+SimpleModelSpecs == {
+    "AnomaliesCosmosDB",
+    "MCCosmosDBProps",
+    "SimCosmosDBProps",
+    "MCCosmosDBClient",
+    "MCCosmosDBWithAllReads",
+    "CosmosDBLinearizability",
+
+    "StrongConsistencyRefinesBoundedStaleness",
+    "SessionConsistencyRefinesConsistentPrefix",
+    "BoundedStalenessRefinesSessionConsistency",
+    "ConsistentPrefixRefinesEventualConsistency"
+}
+
+ASSUME \A spec \in SimpleModelSpecs :
+    Check(<<>>, TRUE, "simple-model", spec)
+
+ExpectedFailingSimpleModelSpecs == {
+    "show521677",
+    "show521677PCal",
+    "show521677simple",
+    "show521677simplePCal"
+}
+
+ASSUME \A spec \in ExpectedFailingSimpleModelSpecs :
+    Check(<<>>, FALSE, "simple-model", spec)
 
 =============================================================================
 -------- CONFIG Regressions --------

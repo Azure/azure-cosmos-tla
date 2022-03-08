@@ -35,9 +35,9 @@ ASSUME NumClientsPerRegion \in Nat
 (* (4) prefix (Consistent Prefix)                                          *)
 (* (5) eventual                                                            *)
 (***************************************************************************)
-CONSTANT Consistency
+VARIABLE Consistency
 
-ASSUME Consistency \in {"Strong", "Bounded_staleness", "Session", "Consistent_prefix", "Eventual"}
+\* ASSUME Consistency \in {"Strong", "Bounded_staleness", "Session", "Consistent_prefix", "Eventual"}
 
 (* The bounded version differences in Bounded Staleness consistency *)
 CONSTANT K
@@ -203,6 +203,21 @@ Spec == /\ Init /\ [][Next]_vars
 
 -----------------------------------------------------------------------------
 
+CombinedInit ==
+    /\ Consistency \in {"Strong", "Bounded_staleness", "Session", "Consistent_prefix", "Eventual"}
+    /\ Init
+
+CombinedNext ==
+    /\ Next
+    /\ UNCHANGED Consistency
+
+CombinedSpec ==
+    /\ CombinedInit /\ [][CombinedNext]_<<vars, Consistency>>
+    /\ \A self \in Clients : WF_vars(client(self))
+        /\ WF_vars(CosmosDB)
+
+-----------------------------------------------------------------------------
+
 (* enable these invariants in model checker *)
 
 (* Check elements in History are type of Opertion *)
@@ -249,21 +264,26 @@ ReadAfterWrite == \A i, j \in DOMAIN History : /\ i < j
 Linearizability == \A i, j \in DOMAIN History : /\ i < j
                                                 => History[j].data >= History[i].data
 
-BoundedStaleness == /\ \A i, j \in Regions : Last(Database[i]) - Last(Database[j]) \in -K..K
+BoundedStaleness == Consistency = "Bounded_staleness" =>
+                    /\ \A i, j \in Regions : Last(Database[i]) - Last(Database[j]) \in -K..K
                     /\ \A r \in Regions : MonotonicReadPerRegion(r)
-                    /\ ReadYourWrite
+                    \* /\ ReadYourWrite
 
-ConsistentPrefix == \A r \in Regions : /\ MonotonicWritePerRegion(r)
+ConsistentPrefix == Consistency = "Consistent_prefix" =>
+                    \A r \in Regions : /\ MonotonicWritePerRegion(r)
                                        /\ AnyReadPerRegion(r)
 
-Strong == /\ Linearizability
+Strong == Consistency = "Strong" =>
+          /\ Linearizability
           /\ Monotonic(History)
           /\ ReadAfterWrite
 
-Session == /\ \A c \in Clients : MonotonicReadPerClient(c)
+Session == Consistency = "Session" =>
+           /\ \A c \in Clients : MonotonicReadPerClient(c)
            /\ ReadYourWrite
 
-Eventual == \A i \in DOMAIN History : 
+Eventual == Consistency = "Eventual" =>
+            \A i \in DOMAIN History :
             LET r == History[i].region
             IN History[i].data \in {Database[r][j] : j \in DOMAIN Database[r]} \union {0}
 

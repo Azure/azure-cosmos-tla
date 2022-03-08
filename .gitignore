@@ -338,3 +338,6 @@ tools/
 */*.out
 */*.dot
 _apalache-out/
+*/*.toolbox/
+.ammonite/
+.metals/
