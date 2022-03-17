@@ -6,7 +6,10 @@
 (* the protocol implementation.                                            *)
 (***************************************************************************)
 
-EXTENDS Integers, Sequences, FiniteSets, TLC
+EXTENDS Integers, Sequences, FiniteSets, Functions, SequencesExt
+
+Merge(s1, s2) ==
+    SetToSortSeq(Range(s1) \cup Range(s2), <)
 
 (***************************************************************************)
 (* Number of regions                                                       *)
@@ -72,20 +75,8 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
               Database = [r \in Regions |-> <<0>>];
               
               (* Value used by clients *)
-              value = 0;
+              value = 0;  
               
-    define {
-        \* Removing duplicates from a sequence:
-        RECURSIVE RemDupRec(_,_)
-        RemDupRec(es, seen) == IF es = <<>> THEN <<>>
-                               ELSE IF es[1] \in seen THEN RemDupRec(Tail(es), seen)
-                               ELSE <<es[1]>> \o RemDupRec(Tail(es), seen \cup {es[1]})
-                                         
-        RemoveDuplicates(es) == RemDupRec(es, {})
-                             
-        Last(s) == s[Len(s)]
-    }
-    
     (* -------------------------------------------------------------- *)
     (* --------------------- CLIENT ACTIONS ------------------------- *)
     (* -------------------------------------------------------------- *)
@@ -128,7 +119,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     {
         with (s \in WriteRegions; d \in Regions)
         {
-            Database[d] := RemoveDuplicates(SortSeq(Database[d] \o Database[s], <));
+            Database[d] := Merge(Database[d], Database[s]);
         }
     }
     
@@ -165,19 +156,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
 }
 *)
 \* BEGIN TRANSLATION
-VARIABLES History, Database, value
-
-(* define statement *)
-RECURSIVE RemDupRec(_,_)
-RemDupRec(es, seen) == IF es = <<>> THEN <<>>
-                       ELSE IF es[1] \in seen THEN RemDupRec(Tail(es), seen)
-                       ELSE <<es[1]>> \o RemDupRec(Tail(es), seen \cup {es[1]})
-
-RemoveDuplicates(es) == RemDupRec(es, {})
-
-Last(s) == s[Len(s)]
-
-VARIABLE session_token
+VARIABLES History, Database, value, session_token
 
 vars == << History, Database, value, session_token >>
 
@@ -210,7 +189,7 @@ client(self) == \/ /\ value' = value + 1
 
 CosmosDB == /\ \E s \in WriteRegions:
                  \E d \in Regions:
-                   Database' = [Database EXCEPT ![d] = RemoveDuplicates(SortSeq(Database[d] \o Database[s], <))]
+                   Database' = [Database EXCEPT ![d] = Merge(Database[d], Database[s])]
             /\ UNCHANGED << History, value, session_token >>
 
 Next == CosmosDB
@@ -228,9 +207,6 @@ Spec == /\ Init /\ [][Next]_vars
 
 (* Check elements in History are type of Opertion *)
 TypeOK == {History[i] : i \in DOMAIN History} \subseteq Operations
-
-                     
-Range(s) == {s[i] : i \in DOMAIN s}
 
 (* Read value in any regional database history *)                       
 AnyReadPerRegion(r) == \A i \in DOMAIN History : /\ History[i].type = "read"
