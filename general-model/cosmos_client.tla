@@ -68,11 +68,8 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     variables (* Client operation history *)
               History = <<>>;
               
-              (* Latest data value in each region *)
-              Data = [r \in Regions |-> 0];
-              
               (* Tentative log in each region *)
-              Database = [r \in Regions |-> <<>>];
+              Database = [r \in Regions |-> <<0>>];
               
               (* Value used by clients *)
               value = 0;
@@ -98,9 +95,8 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     {
         with (w \in WriteRegions)
         {
-            when \A i, j \in Regions : Data[i] - Data[j] \in Bound;
+            when \A i, j \in Regions : Last(Database[i]) - Last(Database[j]) \in Bound;
             Database[w] := Append(@, v);
-            Data[w] := v;
             History := Append(History, [type |-> "write",
                                         data |-> v,
                                       region |-> w,
@@ -113,14 +109,14 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     macro read()
     {
         (* We check session token for session consistency *)
-        when Consistency /= "Session" \/ Data[self[1]] >= session_token;
+        when Consistency /= "Session" \/ Last(Database[self[1]]) >= session_token;
         (* We check global value for strong consistency *)
-        when Consistency /= "Strong" \/ \A i, j \in Regions : Data[i] = Data[j];
+        when Consistency /= "Strong" \/ \A i, j \in Regions : Last(Database[i]) = Last(Database[j]);
         History := Append(History, [type |-> "read",
-                                    data |-> Data[self[1]],
+                                    data |-> Last(Database[self[1]]),
                                   region |-> self[1],
                                   client |-> self]);
-        session_token := Data[self[1]];
+        session_token := Last(Database[self[1]]);
     }
     
     (* -------------------------------------------------------------- *)
@@ -133,10 +129,6 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
         with (s \in WriteRegions; d \in Regions)
         {
             Database[d] := RemoveDuplicates(SortSeq(Database[d] \o Database[s], <));
-            if (Len(Database[d]) > 0)
-            {
-                Data[d] := Last(Database[d]);
-            }
         }
     }
     
@@ -173,7 +165,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
 }
 *)
 \* BEGIN TRANSLATION
-VARIABLES History, Data, Database, value
+VARIABLES History, Database, value
 
 (* define statement *)
 RECURSIVE RemDupRec(_,_)
@@ -187,44 +179,38 @@ Last(s) == s[Len(s)]
 
 VARIABLE session_token
 
-vars == << History, Data, Database, value, session_token >>
+vars == << History, Database, value, session_token >>
 
 ProcSet == (Clients) \cup {<<0, 0>>}
 
 Init == (* Global variables *)
         /\ History = <<>>
-        /\ Data = [r \in Regions |-> 0]
-        /\ Database = [r \in Regions |-> <<>>]
+        /\ Database = [r \in Regions |-> <<0>>]
         /\ value = 0
         (* Process client *)
         /\ session_token = [self \in Clients |-> 0]
 
 client(self) == \/ /\ value' = value + 1
                    /\ \E w \in WriteRegions:
-                        /\ \A i, j \in Regions : Data[i] - Data[j] \in Bound
+                        /\ \A i, j \in Regions : Last(Database[i]) - Last(Database[j]) \in Bound
                         /\ Database' = [Database EXCEPT ![w] = Append(@, value')]
-                        /\ Data' = [Data EXCEPT ![w] = value']
                         /\ History' = Append(History, [type |-> "write",
                                                        data |-> value',
                                                      region |-> w,
                                                      client |-> self])
                         /\ session_token' = [session_token EXCEPT ![self] = value']
-                \/ /\ Consistency /= "Session" \/ Data[self[1]] >= session_token[self]
-                   /\ Consistency /= "Strong" \/ \A i, j \in Regions : Data[i] = Data[j]
+                \/ /\ Consistency /= "Session" \/ Last(Database[self[1]]) >= session_token[self]
+                   /\ Consistency /= "Strong" \/ \A i, j \in Regions : Last(Database[i]) = Last(Database[j])
                    /\ History' = Append(History, [type |-> "read",
-                                                  data |-> Data[self[1]],
+                                                  data |-> Last(Database[self[1]]),
                                                 region |-> self[1],
                                                 client |-> self])
-                   /\ session_token' = [session_token EXCEPT ![self] = Data[self[1]]]
-                   /\ UNCHANGED <<Data, Database, value>>
+                   /\ session_token' = [session_token EXCEPT ![self] = Last(Database[self[1]])]
+                   /\ UNCHANGED <<Database, value>>
 
 CosmosDB == /\ \E s \in WriteRegions:
                  \E d \in Regions:
-                   /\ Database' = [Database EXCEPT ![d] = RemoveDuplicates(SortSeq(Database[d] \o Database[s], <))]
-                   /\ IF Len(Database'[d]) > 0
-                         THEN /\ Data' = [Data EXCEPT ![d] = Last(Database'[d])]
-                         ELSE /\ TRUE
-                              /\ Data' = Data
+                   Database' = [Database EXCEPT ![d] = RemoveDuplicates(SortSeq(Database[d] \o Database[s], <))]
             /\ UNCHANGED << History, value, session_token >>
 
 Next == CosmosDB
@@ -287,7 +273,7 @@ ReadAfterWrite == \A i, j \in DOMAIN History : /\ i < j
 Linearizability == \A i, j \in DOMAIN History : /\ i < j
                                                 => History[j].data >= History[i].data
 
-BoundedStaleness == /\ \A i, j \in Regions : Data[i] - Data[j] \in -K..K
+BoundedStaleness == /\ \A i, j \in Regions : Last(Database[i]) - Last(Database[j]) \in -K..K
                     /\ \A r \in Regions : MonotonicReadPerRegion(r)
                     /\ ReadYourWrite
 
