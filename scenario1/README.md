@@ -52,3 +52,7 @@ When we check for consistent prefix, we find that strong and bounded-staleness p
 
 - [swscop.pdf](./swscop.pdf)
 - [swscop.tla](./swscop.tla)
+
+## Background Material
+
+[Dr. TLA+ Series - TLA+ specifications of the consistency guarantees provided by Cosmos DB (Murat Demirbas)](https://github.com/tlaplus/DrTLAPlus/blob/master/CosmosDB/README.md)
