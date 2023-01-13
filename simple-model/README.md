@@ -13,9 +13,9 @@ PRs increasing this set with new possibilities, including potentially failing ca
 
 If you need to consider network delay in addition to Cosmos DB's base semantics (although it may not make a meaningful difference in most cases, and may complicate your model), `CosmosDBClient.tla` contains definitions that can be used to do this.
 
-For examples of how to use the specifications here in order to model a specific situation, the files `show*.tla` contain variations of a model of the same outage at Microsoft Azure.
-One uses plain TLA+, one uses plain TLA+ and simulates network communication, and one is written in PlusCal.
-These are expected to fail model checking, and provide a counter-example which abstractly represents the root cause of the relevant outage.
+For examples of how to use the specifications here in order to model a specific situation, the files `show*.tla` contain variations of a model of the same [outage at Microsoft Azure](https://portal.microsofticm.com/imp/v3/incidents/postmortem/521677).
+The spec [show521677simple.tla](https://github.com/tlaplus/azure-cosmos-tla/blob/master/simple-model/show521677simple.tla) models the outage *above* the network layer, while [show521677.tla](https://github.com/tlaplus/azure-cosmos-tla/blob/master/simple-model/show521677.tla) is more detailed and includes network communication.  Similarly, two PlusCal specifications model the outage at the same two levels of abstraction ([show521677simplePCal](https://github.com/tlaplus/azure-cosmos-tla/blob/master/simple-model/show521677simplePCal.tla) and [show521677PCal.tla](https://github.com/tlaplus/azure-cosmos-tla/blob/master/simple-model/show521677PCal.tla)).
+Model checking each spec with TLC will provide a counter-example which represents the root cause of the relevant outage.
 
 ## Analysis-specific files
 
