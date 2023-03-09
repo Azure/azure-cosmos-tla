@@ -1,6 +1,6 @@
 --------------------------- MODULE cosmos_client ----------------------------
 (***************************************************************************)
-(* Microsoft Azure Cosmos DB TLA+ speciﬁcation for the five consistency    *)
+(* Microsoft Azure Cosmos DB TLA+ specification for the five consistency    *)
 (* levels the service offers. The spec focuses on the consistency          *)
 (* guarantees Cosmos DB provides to the clients, without the details of    *)
 (* the protocol implementation.                                            *)
@@ -129,6 +129,8 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     (* Reads with consistency checks *)
     macro read()
     {
+        (* I check prefix token for consistent_prefix *)
+        when Consistency /= "consistent_prefix" \/ Data[self[1]] <= prefix_token + 1; 
         (* We check session token for session consistency *)
         when Consistency /= "session" \/ Data[self[1]] >= session_token;
         (* We check global value for strong consistency *)
@@ -138,6 +140,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
                                   region |-> self[1],
                                   client |-> self]);
         session_token := Data[self[1]];
+        prefix_token := Data[self[1]]
     }
     
     (* -------------------------------------------------------------- *)
@@ -161,7 +164,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     (* -------------------- CLIENT PROCESSES ------------------------ *)
     (* -------------------------------------------------------------- *)
     fair process (client \in Clients)
-    variable session_token = 0;
+    variables session_token = 0, prefix_token = 0;
     numOp = 0;
     {
         client_actions:
@@ -192,7 +195,7 @@ Operations == [type: {"write"}, data: Nat, region: WriteRegions, client: Clients
     
 }
 *)
-\* BEGIN TRANSLATION
+\* BEGIN TRANSLATION - the hash of the PCal code: PCal-7383d14307679655826c807afa7a1f3b
 VARIABLES Bound, History, Data, Database, value, pc
 
 (* define statement *)
@@ -216,9 +219,10 @@ MaxLen(c) == LET region == CHOOSE i \in Regions : \A j \in Regions : Len(c[i]) >
 MinLen(c) == LET region == CHOOSE i \in Regions : \A j \in Regions : Len(c[i]) <= Len(c[j])
              IN Len(c[region])
 
-VARIABLES session_token, numOp
+VARIABLES session_token, prefix_token, numOp
 
-vars == << Bound, History, Data, Database, value, pc, session_token, numOp >>
+vars == << Bound, History, Data, Database, value, pc, session_token, 
+           prefix_token, numOp >>
 
 ProcSet == (Clients) \cup {<<0, 0>>}
 
@@ -234,6 +238,7 @@ Init == (* Global variables *)
         /\ value = 0
         (* Process client *)
         /\ session_token = [self \in Clients |-> 0]
+        /\ prefix_token = [self \in Clients |-> 0]
         /\ numOp = [self \in Clients |-> 0]
         /\ pc = [self \in ProcSet |-> CASE self \in Clients -> "client_actions"
                                         [] self = <<0, 0>> -> "database_action"]
@@ -246,7 +251,7 @@ client_actions(self) == /\ pc[self] = "client_actions"
                               ELSE /\ pc' = [pc EXCEPT ![self] = "Done"]
                                    /\ numOp' = numOp
                         /\ UNCHANGED << Bound, History, Data, Database, value, 
-                                        session_token >>
+                                        session_token, prefix_token >>
 
 write(self) == /\ pc[self] = "write"
                /\ value' = value + 1
@@ -263,9 +268,10 @@ write(self) == /\ pc[self] = "write"
                           /\ UNCHANGED << History, Data, Database, 
                                           session_token >>
                /\ pc' = [pc EXCEPT ![self] = "client_actions"]
-               /\ UNCHANGED << Bound, numOp >>
+               /\ UNCHANGED << Bound, prefix_token, numOp >>
 
 read(self) == /\ pc[self] = "read"
+              /\ Consistency /= "consistent_prefix" \/ \A i \in WriteRegions : Data[self[1]] = prefix_token[self] + 1
               /\ Consistency /= "session" \/ Data[self[1]] >= session_token[self]
               /\ Consistency /= "strong" \/ \A i, j \in Regions : Data[i] = Data[j]
               /\ History' = Append(History, [type |-> "read",
@@ -273,6 +279,7 @@ read(self) == /\ pc[self] = "read"
                                            region |-> self[1],
                                            client |-> self])
               /\ session_token' = [session_token EXCEPT ![self] = Data[self[1]]]
+              /\ prefix_token' = [prefix_token EXCEPT ![self] = Data[self[1]]]
               /\ pc' = [pc EXCEPT ![self] = "client_actions"]
               /\ UNCHANGED << Bound, Data, Database, value, numOp >>
 
@@ -287,7 +294,8 @@ database_action == /\ pc[<<0, 0>>] = "database_action"
                                 ELSE /\ TRUE
                                      /\ Data' = Data
                    /\ pc' = [pc EXCEPT ![<<0, 0>>] = "database_action"]
-                   /\ UNCHANGED << Bound, History, value, session_token, numOp >>
+                   /\ UNCHANGED << Bound, History, value, session_token, 
+                                   prefix_token, numOp >>
 
 CosmosDB == database_action
 
@@ -298,7 +306,7 @@ Spec == /\ Init /\ [][Next]_vars
         /\ \A self \in Clients : WF_vars(client(self))
         /\ WF_vars(CosmosDB)
 
-\* END TRANSLATION
+\* END TRANSLATION - the hash of the generated TLA code (remove to silence divergence warnings): TLA-047d466408932299eee911228ea53d22
 
 
 -----------------------------------------------------------------------------
@@ -316,6 +324,8 @@ AnyReadPerRegion(r) == \A i \in DOMAIN History : /\ History[i].type = "read"
 (* Operation in history h is monitonic *)
 Monotonic(h) == \A i, j \in DOMAIN h : i <= j => h[i].data <= h[j].data
 
+StrongMonotonicOneByOne(h) == \A i, j \in DOMAIN h : i + 1 = j => h[i].data + 1 >= h[j].data
+
 (* Reads in region r are monotonic *)
 MonotonicReadPerRegion(r) == LET reads == [i \in {j \in DOMAIN History : /\ History[j].type = "read" 
                                                                          /\ History[j].region = r}
@@ -327,7 +337,12 @@ MonotonicReadPerClient(c) == LET reads == [i \in {j \in DOMAIN History : /\ Hist
                                                                          /\ History[j].client = c} 
                                           |-> History[i]]
                               IN Monotonic(reads)
-                             
+
+OneByOneReadPerClient(c) == LET reads == [i \in {j \in DOMAIN History : /\ History[j].type = "read" 
+                                                                        /\ History[j].client = c}
+                                                  |-> History[i]]
+                                     IN StrongMonotonicOneByOne(reads)
+
 MonotonicWritePerRegion(r) == LET writes == [i \in {j \in DOMAIN History : /\ History[j].type = "write" 
                                                                            /\ History[j].region = r} 
                                             |-> History[i]]
@@ -357,8 +372,9 @@ BoundedStaleness == /\ \A i, j \in Regions : Data[i] - Data[j] <= K
                     /\ \A r \in Regions : MonotonicReadPerRegion(r)
                     /\ ReadYourWrite
 
-ConsistentPrefix == \A r \in Regions : /\ MonotonicWritePerRegion(r)
-                                       /\ AnyReadPerRegion(r)
+ConsistentPrefix == /\ \A r \in Regions : /\ MonotonicWritePerRegion(r)
+                                          /\ AnyReadPerRegion(r)
+                    /\ \A c \in Clients : /\ OneByOneReadPerClient(c)
 
 Strong == /\ Linearizability
           /\ Monotonic(History)
