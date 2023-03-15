@@ -6,16 +6,16 @@ CONSTANTS StrongConsistency, BoundedStaleness,
           EventualConsistency
 CONSTANTS VersionBound, StalenessBound
 
-VARIABLES log, commitIndex, readIndex, epoch, WriteConsistencyLevel
+VARIABLES log, commitIndex, readIndex
 
 Keys == {"taskKey"}
 Values == {"taskValue"}
 NoValue == "NoValue"
 
-cosmosVarsExceptLog == <<commitIndex, readIndex, epoch, WriteConsistencyLevel>>
+cosmosVarsExceptLog == <<commitIndex, readIndex>>
 cosmosVars == <<cosmosVarsExceptLog, log>>
 
-CosmosDB == INSTANCE CosmosDB
+CosmosDB == INSTANCE CosmosDB WITH epoch <- 1, WriteConsistencyLevel <- SessionConsistency
 
 ---------------------------------------------------------------------
 
@@ -133,7 +133,6 @@ TerminatingImpl == /\ \A self \in ProcSet: pc[self] = "Done"
 combinedVars == <<vars, cosmosVars>>
 
 CombinedInit ==
-    /\ WriteConsistencyLevel = SessionConsistency
     /\ Init
     /\ CosmosDB!Init
 
@@ -150,14 +149,6 @@ CombinedSpec ==
     /\ [][CombinedNext]_combinedVars
     /\ WF_vars(cosmos)
     /\ WF_vars(Next)
-
----------------------------------------------------------------------
-
-SpecificStateSpace ==
-    \* Don't model data loss. It is not needed, and it allows a session
-    \* token to expire after being acquired. Handling that would
-    \* complicate this spec.
-    /\ epoch = 1
 
 ---------------------------------------------------------------------
 
