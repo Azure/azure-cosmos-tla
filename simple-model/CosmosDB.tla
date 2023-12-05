@@ -248,9 +248,12 @@ WriteCanSucceed(token) ==
         /\ token.epoch = epoch
         /\ token.checkpoint <= commitIndex)
 
-\* This predicate indicates whether a read consistency if
+\* This predicate indicates whether a read consistency is
 \* valid, given a particular configured write consistency.
-\* 
+\* A read consistency is valid if it is not stronger than
+\* the configured write consistency.  In other words, the
+\* write consistency level defines the upper bound for the
+\* strongest read consistency level that can be used.
 ReadConsistencyOK(level) ==
     CASE WriteConsistencyLevel = StrongConsistency ->
             TRUE
