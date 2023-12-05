@@ -45,9 +45,11 @@ Epochs == Nat \ {0}
 \*   rejected.
 \* - VersionBound, at all consistency levels, indicates the maximum distance
 \*   between Len(log) and readIndex. Writes beyond that are rejected.
+\* A VersionBound or StalenessBound of 0 would mean no writes are accepted (as
+\* per the definition of WritesAccepted below).
 CONSTANT StalenessBound, VersionBound
-ASSUME StalenessBound \in Nat
-ASSUME VersionBound \in Nat
+ASSUME StalenessBound \in Nat \ {0}
+ASSUME VersionBound \in Nat \ {0}
 
 \* Session tokens represent a point in the log, as well as a particular "epoch".
 \* Each session-consistent read and write will produce an updated token, and
