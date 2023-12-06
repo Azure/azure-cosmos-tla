@@ -170,9 +170,12 @@ Logs == Seq(LogEntries)
 \*   the data in the log. No operation should ever return out of sync data staler
 \*   than this point in the log, because by definition no replica can be staler than
 \*   this point in the log.
-\* - the epoch increments when the log is truncated. It is used by session
-\*   consistency to detect data loss due to truncation and prevent invalid reads/writes
-\*   when session consistency can no longer be guaranteed for a given token.
+\* - the epoch increments strictly monotonically whenever  log  is non-deterministically
+\*   truncated in the range (commitIndex+1)..Len(log)), modeling loss of uncommitted data
+\*   due to node failures when all session tokens of the current epoch become invalid.
+\*   Thus, Epoch is only used by session consistency to detect data loss due to truncation
+\*   and prevent invalid reads/writes when session consistency can no longer be guaranteed
+\*   for a given token.
 \*
 \* WriteConsistencyLevel is conceptually a constant, i.e., [][UNCHANGED WriteConsistencyLevel]_vars.
 \* Making it an unchanging state variable allows it to modelcheck multiple/all consistency levels
