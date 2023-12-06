@@ -270,12 +270,10 @@ ReadConsistencyOK(level) ==
       [] WriteConsistencyLevel = EventualConsistency ->
             level = EventualConsistency
 
-\* This operator is a generalized sanity check.
-\* If you try to read at a higher consistency level than the
-\* configured write consistency, it is not specified what will
-\* happen. Therefore, if this situation is reached during
-\* verification, we should stop immediately so you can exclude
-\* that situation.
+\* Attempting to read at a higher consistency level than the configured write consistency 
+\* has undefined behavior. In this instance, we've chosen to map an invalid read consistency 
+\* level to an empty read (we also considered mapping an invalid read consistency level to 
+\* TLC!Assert(...). However, this specification should remain independent of the TLC module).
 CheckReadConsistency(level, read) ==
     IF   ReadConsistencyOK(level)
     THEN read
