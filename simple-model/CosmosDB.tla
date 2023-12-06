@@ -9,28 +9,29 @@ ConsistencyLevels == {StrongConsistency, BoundedStaleness,
                       SessionConsistency, ConsistentPrefix,
                       EventualConsistency}
 
-\* This comment represents how ConsistencyLevel should be understood,
+
+\* This comment represents how WriteConsistencyLevel should be understood;
 \* as a constant you can choose from ConsistencyLevels.
 \* It's a state variable so model checking can operate across all
 \* consistency levels at once.
 \* 
 \* If your use of this spec needs a single consistency level, consider
-\* that you can write the following in your Init operator:
-\* /\ ConsistencyLevel = StrongConsistency
+\* that you can conjoin the following constraint to your Init operator:
+\* /\ WriteConsistencyLevel = StrongConsistency
 \* /\ CosmosDB!Init
 \* 
 \* CosmosDB!Init (referencing the Init in this file) will also state
-\* ConsistencyLevel \in ConsistencyLevels, but if
-\* ConsistencyLevel = ConsistencyLevels appears first, then only that
+\* WriteConsistencyLevel \in ConsistencyLevels, but if
+\* WriteConsistencyLevel = ConsistencyLevels appears first, then only that
 \* single value will be explored (the broader requirement is still true,
 \* just restricted by the narrower condition added above).
 \*
 \* If you really need a constant value (e.g for some refinements),
 \* then unfortunately you have to just uncomment the two lines below and
-\* comment out all the references to ConsistencyLevel as a variable.
+\* comment out all the references to WriteConsistencyLevel as a variable.
 \*
-\* CONSTANT ConsistencyLevel
-\* ASSUME ConsistencyLevel \in ConsistencyLevels
+\* CONSTANT WriteConsistencyLevel
+\* ASSUME WriteConsistencyLevel \in ConsistencyLevels
 
 LogIndices == Nat \ {0}
 
@@ -173,10 +174,10 @@ Logs == Seq(LogEntries)
 \*   consistency to detect data loss due to truncation and prevent invalid reads/writes
 \*   when session consistency can no longer be guaranteed for a given token.
 \*
-\* WriteConsistencyLevel is conceptually a constant, but making it an unchanging
-\* state variable makes it easier to check multiple consistency levels at once.
-\* The WriteConsistencyLevel is a system-wide setting indicating at what consistency
-\* level writes are performed.
+\* WriteConsistencyLevel is conceptually a constant, i.e., [][UNCHANGED WriteConsistencyLevel]_vars.
+\* Making it an unchanging state variable allows it to modelcheck multiple/all consistency levels
+\* at once. In the real system, the WriteConsistencyLevel is a system-wide setting indicating
+\* at what consistency level writes are performed.  It cannot be changed at runtime.
 
 VARIABLES log, commitIndex, readIndex, epoch
 VARIABLE WriteConsistencyLevel \* conceptually a constant, will never change!
