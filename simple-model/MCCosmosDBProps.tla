@@ -8,7 +8,7 @@ CheckpointsImpl == LogIndicesImpl \cup {0}
 EpochsImpl == 1..3
 
 SpecificStateSpace ==
-    /\ Len(log) < Max(LogIndicesImpl)
+    /\ Len(log) < (Max(LogIndicesImpl) - 1)
     /\ epoch < Max(EpochsImpl)
 
 StalenessBoundImpl == 2

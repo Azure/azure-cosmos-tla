@@ -433,6 +433,19 @@ SessionTokenWhenValid ==
             /\ token.epoch = epoch \/ token = NoSessionToken
             => SessionConsistencyRead(token, key) # {}
 
+SessionTokenAlwaysAcquirableRead ==
+    ReadConsistencyOK(SessionConsistency)
+    =>
+    \A key \in Keys :
+        { UpdateTokenFromRead(NoSessionToken, read)
+          : read \in SessionConsistencyRead(NoSessionToken, key) }
+        \subseteq AcquirableSessionTokens
+
+SessionTokenAlwaysAcquirableWrite ==
+    WriteConsistencyLevel = SessionConsistency
+    =>
+    WriteInitToken \in AcquirableSessionTokens
+
 \* ConsistentPrefix
 \* https://docs.microsoft.com/en-us/azure/cosmos-db/consistency-levels#consistent-prefix-consistency
 \* Note: consistent prefix does not seem to be observable
