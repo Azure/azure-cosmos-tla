@@ -26,3 +26,7 @@ For Consistency="Prefix" and "Eventual", the predicates for Strong, Session,and 
 
 - [swscrw.pdf](./swscrw.pdf)
 - [swscrw.tla](./swscrw.tla)
+
+## Background Material
+
+[Dr. TLA+ Series - TLA+ specifications of the consistency guarantees provided by Cosmos DB (Murat Demirbas)](https://github.com/tlaplus/DrTLAPlus/blob/master/CosmosDB/README.md)

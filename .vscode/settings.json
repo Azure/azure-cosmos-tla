@@ -1,0 +1,35 @@
+{
+    "tlaplus.tlc.modelChecker.options": "-gzip -metadir /tmp -cleanup -workers auto",
+    "tlaplus.tlc.statisticsSharing": "share",
+    "[tlaplus]": {"editor.codeActionsOnSave": {"source": true} },
+    "extensions.autoCheckUpdates": false,
+    "extensions.autoUpdate": false,
+    "breadcrumbs.enabled": false,
+    "editor.minimap.enabled": false,
+    "editor.useTabStops": false,
+    "redhat.telemetry.enabled": false,
+        "files.exclude": {
+            "_apalache-out": true,
+            ".devcontainer": true,
+            ".gitignore": true,
+            ".gitpod.yml": true,
+            ".tlacache": true,
+            ".vscode": true,
+            "*.aux": true,
+            "*.dvi": true,
+            "*.log": true,
+            "*.tex": true,
+            "*.tlaps": true,
+            "*.toolbox": true,
+            "detailed.log": true,
+            "figures": true,
+            "LICENSE": true,
+            "log0.smt": true,
+            "profile-rules.txt": true,
+            "states": true,
+            "x": true
+        },
+    "files.watcherExclude": {
+        "**/target": true
+    }
+}
